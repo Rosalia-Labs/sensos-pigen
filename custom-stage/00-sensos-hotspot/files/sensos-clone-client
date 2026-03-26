@@ -1,0 +1,51 @@
+#!/bin/bash
+
+set -euo pipefail
+
+REPO_URL="https://github.com/Rosalia-Labs/sensos-client.git"
+DEFAULT_DIRNAME="sensos-client"
+
+resolve_target_user() {
+    if [ -n "${SUDO_USER:-}" ] && [ "${SUDO_USER}" != "root" ]; then
+        printf '%s\n' "${SUDO_USER}"
+        return
+    fi
+
+    if [ "$(id -u)" -ne 0 ]; then
+        id -un
+        return
+    fi
+
+    awk -F: '$3 == 1000 { print $1; exit }' /etc/passwd
+}
+
+TARGET_USER="$(resolve_target_user)"
+if [ -z "${TARGET_USER}" ]; then
+    echo "Unable to determine the target user." >&2
+    exit 1
+fi
+
+TARGET_HOME="$(getent passwd "${TARGET_USER}" | cut -d: -f6)"
+if [ -z "${TARGET_HOME}" ] || [ ! -d "${TARGET_HOME}" ]; then
+    echo "Unable to resolve home directory for ${TARGET_USER}." >&2
+    exit 1
+fi
+
+TARGET_DIR="${TARGET_HOME}/${DEFAULT_DIRNAME}"
+if [ -e "${TARGET_DIR}" ]; then
+    echo "${TARGET_DIR} already exists." >&2
+    exit 1
+fi
+
+if ! command -v git >/dev/null 2>&1; then
+    echo "git is not installed." >&2
+    exit 1
+fi
+
+if [ "$(id -u)" -eq 0 ]; then
+    sudo -u "${TARGET_USER}" git clone "${REPO_URL}" "${TARGET_DIR}"
+else
+    git clone "${REPO_URL}" "${TARGET_DIR}"
+fi
+
+echo "Cloned sensos-client to ${TARGET_DIR}"

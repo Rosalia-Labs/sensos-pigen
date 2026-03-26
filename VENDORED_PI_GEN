@@ -1,4 +1,4 @@
 SOURCE_PATH=https://github.com/RPi-Distro/pi-gen.git
-SOURCE_TAG=2025-12-04-raspios-trixie-armhf
-SOURCE_COMMIT=358f978
+SOURCE_TAG=2025-12-04-raspios-trixie-arm64
+SOURCE_COMMIT=4997bf4
 VENDORED_AT=2026-03-26

@@ -7,6 +7,7 @@ ENV_FILE="${ROOTFS_DIR}/etc/default/sensos-hotspot"
 
 install -D -m 0755 "${FILES_DIR}/sensos-start-hotspot" "${ROOTFS_DIR}/usr/local/sbin/sensos-start-hotspot"
 install -D -m 0755 "${FILES_DIR}/sensos-stop-hotspot" "${ROOTFS_DIR}/usr/local/sbin/sensos-stop-hotspot"
+install -D -m 0755 "${FILES_DIR}/sensos-clone-client" "${ROOTFS_DIR}/usr/local/bin/sensos-clone-client"
 install -D -m 0644 "${FILES_DIR}/sensos-hotspot.service" "${ROOTFS_DIR}/etc/systemd/system/sensos-hotspot.service"
 
 mkdir -p "$(dirname "${ENV_FILE}")"
