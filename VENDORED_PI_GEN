@@ -1,4 +1,4 @@
-SOURCE_PATH=/Users/keittth/Projects/SensOS/client/pi-gen
-SOURCE_TAG=2025-10-01-raspios-bookworm-arm64
-SOURCE_COMMIT=58b9a6b
+SOURCE_PATH=https://github.com/RPi-Distro/pi-gen.git
+SOURCE_TAG=2025-12-04-raspios-trixie-armhf
+SOURCE_COMMIT=358f978
 VENDORED_AT=2026-03-26

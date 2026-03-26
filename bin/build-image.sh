@@ -55,6 +55,12 @@ if [ ! -d "${PI_GEN_DIR}" ] || [ ! -x "${PI_GEN_DIR}/build-docker.sh" ]; then
     exit 1
 fi
 
+if ! grep -Eq '^export ARCH=arm64$' "${PI_GEN_DIR}/build.sh"; then
+    echo "This repo expects an arm64 pi-gen tree at ${PI_GEN_DIR}." >&2
+    echo "Reinstall with: ./bin/install-pi-gen.sh --force" >&2
+    exit 1
+fi
+
 if [ ! -d "${STAGE_SRC}" ]; then
     echo "Missing custom stage at ${STAGE_SRC}." >&2
     exit 1
@@ -66,7 +72,7 @@ cleanup() {
 trap cleanup EXIT
 
 if [ -f "${VENDORED_FILE}" ]; then
-    echo "Recommended pi-gen release:"
+    echo "Installed pi-gen release:"
     cat "${VENDORED_FILE}"
     echo
 fi

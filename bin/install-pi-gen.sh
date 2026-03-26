@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_DIR="${ROOT_DIR}/pi-gen"
 VENDORED_FILE="${ROOT_DIR}/VENDORED_PI_GEN"
 REPO_URL="https://github.com/RPi-Distro/pi-gen.git"
+TAG_PATTERN="-arm64"
 
 TAG=""
 FORCE=false
@@ -15,10 +16,11 @@ usage() {
     cat <<EOF
 Usage: $0 [options]
 
-Install the latest tagged RPi-Distro/pi-gen release into ${TARGET_DIR}.
+Install the latest tagged RPi-Distro/pi-gen arm64 release into ${TARGET_DIR}.
 
 Options:
   --tag <tag>                    Install a specific tag instead of the latest one
+  --tag-pattern <value>          Match tags containing this string (default: ${TAG_PATTERN})
   --repo-url <url>               Override the pi-gen git remote
   --force                        Replace an existing non-empty pi-gen directory
   -h, --help                     Show this help text
@@ -37,11 +39,20 @@ resolve_latest_tag() {
 
     ref="$(
         git ls-remote --refs --tags --sort='-version:refname' "${REPO_URL}" \
-        | awk 'NR == 1 { sub(/^refs\/tags\//, "", $2); print $2 }'
+        | awk -v pattern="${TAG_PATTERN}" '
+            {
+                sub(/^refs\/tags\//, "", $2)
+                if (pattern == "" || index($2, pattern) > 0) {
+                    print $2
+                    exit
+                }
+            }
+        '
     )"
 
     if [ -z "${ref}" ]; then
-        echo "Unable to resolve the latest tag from ${REPO_URL}" >&2
+        echo "Unable to resolve a matching tag from ${REPO_URL}" >&2
+        echo "Tag pattern: ${TAG_PATTERN}" >&2
         exit 1
     fi
 
@@ -56,6 +67,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
     --tag)
         TAG="$2"
+        shift 2
+        ;;
+    --tag-pattern)
+        TAG_PATTERN="$2"
         shift 2
         ;;
     --repo-url)

@@ -1,6 +1,6 @@
 # sensos-pigen
 
-Small SensOS-specific wrappers around a user-provided `pi-gen` release.
+Small SensOS-specific wrappers around a user-provided `pi-gen` arm64 release.
 
 This repo does not use `pi-gen` as a submodule, and it does not track the `pi-gen/` directory. You download or extract a `pi-gen` release into [`pi-gen`](/Users/keittth/Projects/sensos-pigen/pi-gen), and this repo adds only the minimal SensOS-specific logic needed to:
 
@@ -20,7 +20,7 @@ Defaults:
 
 ## Setup
 
-Install the latest tagged `pi-gen` release into [`pi-gen`](/Users/keittth/Projects/sensos-pigen/pi-gen):
+Install the latest tagged `pi-gen` arm64 release into [`pi-gen`](/Users/keittth/Projects/sensos-pigen/pi-gen):
 
 ```bash
 ./bin/install-pi-gen.sh
@@ -32,7 +32,7 @@ Install a specific tag when needed:
 ./bin/install-pi-gen.sh --tag 2025-10-01-raspios-bookworm-arm64
 ```
 
-The currently recommended release is recorded in [`VENDORED_PI_GEN`](/Users/keittth/Projects/sensos-pigen/VENDORED_PI_GEN).
+The installed release metadata is recorded in [`VENDORED_PI_GEN`](/Users/keittth/Projects/sensos-pigen/VENDORED_PI_GEN).
 
 ## Workflow
 
@@ -67,6 +67,7 @@ Flash the resulting `.img` from [`pi-gen/deploy`](/Users/keittth/Projects/sensos
 
 ## Notes
 
-- The recommended `pi-gen` release is recorded in [`VENDORED_PI_GEN`](/Users/keittth/Projects/sensos-pigen/VENDORED_PI_GEN).
+- This repo expects an `arm64` `pi-gen` tree.
+- The installed `pi-gen` release is recorded in [`VENDORED_PI_GEN`](/Users/keittth/Projects/sensos-pigen/VENDORED_PI_GEN).
 - The custom hotspot stage lives in [`custom-stage/00-sensos-hotspot`](/Users/keittth/Projects/sensos-pigen/custom-stage/00-sensos-hotspot).
 - `bin/build-image.sh` copies that stage into `pi-gen/stage2` for the build and removes it afterwards.

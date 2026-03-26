@@ -6,12 +6,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PI_GEN_DIR="${ROOT_DIR}/pi-gen"
 CONFIG_FILE="${PI_GEN_DIR}/config"
-VENDORED_FILE="${ROOT_DIR}/VENDORED_PI_GEN"
-
-PI_GEN_RELEASE="vendored"
-if [ -f "${VENDORED_FILE}" ]; then
-    PI_GEN_RELEASE="$(awk -F= '/^SOURCE_TAG=/{print $2}' "${VENDORED_FILE}")"
-fi
+PI_GEN_RELEASE="SensOS reference"
 
 STAGE_LIST="stage0 stage1 stage2"
 PIGEN_DOCKER_OPTS=""
@@ -37,20 +32,9 @@ usage() {
 Usage: $0 [options]
 
 Options:
-  --pi-gen-release <value>                   (default: ${PI_GEN_RELEASE})
-  --stage-list <value>                       (default: ${STAGE_LIST})
-  --pigen-docker-opts <value>                (default: ${PIGEN_DOCKER_OPTS})
   --img-name <value>                         (default: ${IMG_NAME})
-  --timezone-default <value>                 (default: ${TIMEZONE_DEFAULT})
-  --keyboard-keymap <value>                  (default: ${KEYBOARD_KEYMAP})
-  --keyboard-layout <value>                  (default: ${KEYBOARD_LAYOUT})
-  --locale-default <value>                   (default: ${LOCALE_DEFAULT})
   --first-user-name <value>                  (default: ${FIRST_USER_NAME})
   --first-user-pass <value>                  (default: ${FIRST_USER_PASS})
-  --disable-first-boot-user-rename <0|1>     (default: ${DISABLE_FIRST_BOOT_USER_RENAME})
-  --wpa-country <value>                      (default: ${WPA_COUNTRY})
-  --enable-ssh <0|1>                         (default: ${ENABLE_SSH})
-  --deploy-compression <value>               (default: ${DEPLOY_COMPRESSION})
   --enable-hotspot                           (default: enabled)
   --disable-hotspot
   --hotspot-ssid <value>                     (default: ${HOTSPOT_SSID})
@@ -67,40 +51,18 @@ require_pi_gen_tree() {
         echo "Download or extract pi-gen there before running this script." >&2
         exit 1
     fi
+
+    if ! grep -Eq '^export ARCH=arm64$' "${PI_GEN_DIR}/build.sh"; then
+        echo "Expected an arm64 pi-gen tree at ${PI_GEN_DIR}." >&2
+        echo "Reinstall with: ./bin/install-pi-gen.sh --force" >&2
+        exit 1
+    fi
 }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-    --pi-gen-release)
-        PI_GEN_RELEASE="$2"
-        shift 2
-        ;;
-    --stage-list)
-        STAGE_LIST="$2"
-        shift 2
-        ;;
-    --pigen-docker-opts)
-        PIGEN_DOCKER_OPTS="$2"
-        shift 2
-        ;;
     --img-name)
         IMG_NAME="$2"
-        shift 2
-        ;;
-    --timezone-default)
-        TIMEZONE_DEFAULT="$2"
-        shift 2
-        ;;
-    --keyboard-keymap)
-        KEYBOARD_KEYMAP="$2"
-        shift 2
-        ;;
-    --keyboard-layout)
-        KEYBOARD_LAYOUT="$2"
-        shift 2
-        ;;
-    --locale-default)
-        LOCALE_DEFAULT="$2"
         shift 2
         ;;
     --first-user-name)
@@ -109,22 +71,6 @@ while [[ $# -gt 0 ]]; do
         ;;
     --first-user-pass)
         FIRST_USER_PASS="$2"
-        shift 2
-        ;;
-    --disable-first-boot-user-rename)
-        DISABLE_FIRST_BOOT_USER_RENAME="$2"
-        shift 2
-        ;;
-    --wpa-country)
-        WPA_COUNTRY="$2"
-        shift 2
-        ;;
-    --enable-ssh)
-        ENABLE_SSH="$2"
-        shift 2
-        ;;
-    --deploy-compression)
-        DEPLOY_COMPRESSION="$2"
         shift 2
         ;;
     --enable-hotspot)
@@ -202,4 +148,3 @@ if [ -n "${IMAGE_SIZE}" ]; then
 fi
 
 echo "Wrote ${CONFIG_FILE}"
-cat "${CONFIG_FILE}"
