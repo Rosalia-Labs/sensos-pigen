@@ -20,7 +20,17 @@ Defaults:
 
 ## Setup
 
-Download a `pi-gen` release and place it at [`pi-gen`](/Users/keittth/Projects/sensos-pigen/pi-gen).
+Install the latest tagged `pi-gen` release into [`pi-gen`](/Users/keittth/Projects/sensos-pigen/pi-gen):
+
+```bash
+./bin/install-pi-gen.sh
+```
+
+Install a specific tag when needed:
+
+```bash
+./bin/install-pi-gen.sh --tag 2025-10-01-raspios-bookworm-arm64
+```
 
 The currently recommended release is recorded in [`VENDORED_PI_GEN`](/Users/keittth/Projects/sensos-pigen/VENDORED_PI_GEN).
 
