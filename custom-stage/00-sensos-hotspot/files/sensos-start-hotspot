@@ -1,0 +1,67 @@
+#!/bin/bash
+
+set -euo pipefail
+
+ENV_FILE="/etc/default/sensos-hotspot"
+if [ -f "${ENV_FILE}" ]; then
+    # shellcheck disable=SC1091
+    source "${ENV_FILE}"
+fi
+
+if [ "${HOTSPOT_ENABLED:-1}" != "1" ]; then
+    exit 0
+fi
+
+CON_NAME="${HOTSPOT_CONNECTION_NAME:-sensos-hotspot}"
+IFACE="${HOTSPOT_INTERFACE:-wlan0}"
+SSID="${HOTSPOT_SSID:-sensos}"
+PASSWORD="${HOTSPOT_PASSWORD:-sensossensos}"
+
+if [ "${#PASSWORD}" -lt 8 ] || [ "${#PASSWORD}" -gt 63 ]; then
+    echo "Invalid hotspot password length." >&2
+    exit 1
+fi
+
+rfkill unblock wifi || true
+nmcli radio wifi on || true
+
+if ! nmcli -t -f DEVICE device status | grep -qx "${IFACE}"; then
+    echo "Wireless interface ${IFACE} not found." >&2
+    exit 1
+fi
+
+if nmcli -t -f NAME connection show | grep -qx "${CON_NAME}"; then
+    nmcli connection modify "${CON_NAME}" \
+        connection.id "${CON_NAME}" \
+        connection.interface-name "${IFACE}" \
+        connection.autoconnect yes \
+        connection.autoconnect-priority 100 \
+        802-11-wireless.mode ap \
+        802-11-wireless.ssid "${SSID}" \
+        802-11-wireless.band bg \
+        802-11-wireless.hidden no \
+        wifi-sec.key-mgmt wpa-psk \
+        wifi-sec.proto rsn \
+        wifi-sec.group ccmp \
+        wifi-sec.pairwise ccmp \
+        wifi-sec.psk "${PASSWORD}" \
+        ipv4.method shared
+else
+    nmcli connection add type wifi ifname "${IFACE}" con-name "${CON_NAME}" ssid "${SSID}"
+    nmcli connection modify "${CON_NAME}" \
+        connection.interface-name "${IFACE}" \
+        connection.autoconnect yes \
+        connection.autoconnect-priority 100 \
+        802-11-wireless.mode ap \
+        802-11-wireless.ssid "${SSID}" \
+        802-11-wireless.band bg \
+        802-11-wireless.hidden no \
+        wifi-sec.key-mgmt wpa-psk \
+        wifi-sec.proto rsn \
+        wifi-sec.group ccmp \
+        wifi-sec.pairwise ccmp \
+        wifi-sec.psk "${PASSWORD}" \
+        ipv4.method shared
+fi
+
+nmcli connection up "${CON_NAME}"

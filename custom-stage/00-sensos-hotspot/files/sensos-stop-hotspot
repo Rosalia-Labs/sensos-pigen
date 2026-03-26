@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -euo pipefail
+
+ENV_FILE="/etc/default/sensos-hotspot"
+if [ -f "${ENV_FILE}" ]; then
+    # shellcheck disable=SC1091
+    source "${ENV_FILE}"
+fi
+
+CON_NAME="${HOTSPOT_CONNECTION_NAME:-sensos-hotspot}"
+nmcli connection down "${CON_NAME}" || true

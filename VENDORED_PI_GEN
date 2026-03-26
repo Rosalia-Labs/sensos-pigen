@@ -1,0 +1,4 @@
+SOURCE_PATH=/Users/keittth/Projects/SensOS/client/pi-gen
+SOURCE_TAG=2025-10-01-raspios-bookworm-arm64
+SOURCE_COMMIT=58b9a6b
+VENDORED_AT=2026-03-26
