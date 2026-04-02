@@ -68,6 +68,8 @@ Flash the resulting `.img` from [`pi-gen/deploy`](/Users/keittth/Projects/sensos
 ./bin/burn-image.sh --device /dev/rdiskN
 ```
 
+For a sketch of a future "preconfigured image artifact" flow, including a post-build `config-network` facility, see [`docs/preconfigured-image-facility.md`](/Users/keittth/Projects/sensos-pigen/docs/preconfigured-image-facility.md).
+
 ## Notes
 
 - This repo expects an `arm64` `pi-gen` tree.
