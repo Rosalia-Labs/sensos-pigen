@@ -17,6 +17,7 @@ Defaults:
 - hotspot enabled
 - hotspot SSID: `sensos`
 - hotspot password: `sensossensos`
+- optional API password file: `custom-stage/00-sensos-hotspot/files/keys/api_password`
 
 ## Setup
 
@@ -58,6 +59,8 @@ Build the image:
 ```bash
 ./bin/build-image.sh
 ```
+
+To bake an API password into the image, create [`custom-stage/00-sensos-hotspot/files/keys/api_password`](/Users/keittth/Projects/sensos-pigen/custom-stage/00-sensos-hotspot/files/keys/api_password) before building. It will be installed to `/sensos/keys/api_password` in the image if present. The [`custom-stage/00-sensos-hotspot/files/keys/.gitignore`](/Users/keittth/Projects/sensos-pigen/custom-stage/00-sensos-hotspot/files/keys/.gitignore) file keeps that secret out of git by default.
 
 Flash the resulting `.img` from [`pi-gen/deploy`](/Users/keittth/Projects/sensos-pigen/pi-gen/deploy):
 
