@@ -6,6 +6,8 @@ FILES_DIR="files"
 ENV_FILE="${ROOTFS_DIR}/etc/default/sensos-hotspot"
 API_PASSWORD_SRC="${FILES_DIR}/keys/api_password"
 API_PASSWORD_DST="${ROOTFS_DIR}/sensos/keys/api_password"
+CLIENT_TARBALL_SRC="${FILES_DIR}/generated/sensos-client.tar.gz"
+CLIENT_TARBALL_DST="${ROOTFS_DIR}/home/sensos/sensos-client.tar.gz"
 
 install -D -m 0755 "${FILES_DIR}/sensos-start-hotspot" "${ROOTFS_DIR}/usr/local/sbin/sensos-start-hotspot"
 install -D -m 0755 "${FILES_DIR}/sensos-stop-hotspot" "${ROOTFS_DIR}/usr/local/sbin/sensos-stop-hotspot"
@@ -14,6 +16,13 @@ install -D -m 0644 "${FILES_DIR}/sensos-hotspot.service" "${ROOTFS_DIR}/etc/syst
 
 if [ -f "${API_PASSWORD_SRC}" ]; then
     install -D -m 0600 "${API_PASSWORD_SRC}" "${API_PASSWORD_DST}"
+fi
+
+if [ -f "${CLIENT_TARBALL_SRC}" ]; then
+    install -D -m 0644 "${CLIENT_TARBALL_SRC}" "${CLIENT_TARBALL_DST}"
+    on_chroot <<'EOF'
+chown sensos:sensos /home/sensos/sensos-client.tar.gz
+EOF
 fi
 
 mkdir -p "$(dirname "${ENV_FILE}")"

@@ -9,10 +9,15 @@ CONFIG_FILE="${PI_GEN_DIR}/config"
 STAGE_SRC="${REPO_ROOT}/custom-stage/00-sensos-hotspot"
 STAGE_DST="${PI_GEN_DIR}/stage2/04-sensos-hotspot"
 VENDORED_FILE="${REPO_ROOT}/VENDORED_PI_GEN"
+DEFAULT_CLIENT_REPO="${REPO_ROOT}/../sensos-client"
+CLIENT_ARCHIVE_NAME="sensos-client.tar.gz"
+TMP_STAGE_ROOT=""
 
 CONTINUE_BUILD=false
 REMOVE_DEPLOY=false
 YES=false
+INCLUDE_CLIENT_TARBALL=true
+CLIENT_REPO="${SENSOS_CLIENT_REPO:-${DEFAULT_CLIENT_REPO}}"
 
 usage() {
     cat <<EOF
@@ -21,6 +26,8 @@ Usage: $(basename "$0") [options]
 Options:
   --remove-existing              Delete previously built images from pi-gen/deploy
   --continue                     Continue a previously interrupted build
+  --client-repo <path>           Local sensos-client checkout to archive (default: ${CLIENT_REPO})
+  --no-client-tarball            Skip bundling a sensos-client tarball into /home/sensos
   --yes                          Skip interactive confirmation prompts
   -h, --help                     Show this help text
 EOF
@@ -62,6 +69,29 @@ confirm_yes_no() {
     [[ "${answer}" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]
 }
 
+require_command() {
+    command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
+}
+
+prepare_generated_files_dir() {
+    require_command mktemp
+
+    TMP_STAGE_ROOT="$(mktemp -d /tmp/sensos-pigen-build.XXXXXX)"
+    mkdir -p "${TMP_STAGE_ROOT}/generated"
+}
+
+build_client_tarball() {
+    local archive_path="${TMP_STAGE_ROOT}/generated/${CLIENT_ARCHIVE_NAME}"
+
+    [ -d "${CLIENT_REPO}" ] || die "sensos-client repo not found at ${CLIENT_REPO}; pass --client-repo or use --no-client-tarball"
+    [ -f "${CLIENT_REPO}/README.md" ] || die "sensos-client repo at ${CLIENT_REPO} does not look valid"
+
+    require_command tar
+
+    log "creating ${archive_path} from ${CLIENT_REPO}"
+    tar -C "${CLIENT_REPO}" -czf "${archive_path}" .
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
     --remove-existing)
@@ -70,6 +100,14 @@ while [[ $# -gt 0 ]]; do
         ;;
     --continue)
         CONTINUE_BUILD=true
+        shift
+        ;;
+    --client-repo)
+        CLIENT_REPO="$2"
+        shift 2
+        ;;
+    --no-client-tarball)
+        INCLUDE_CLIENT_TARBALL=false
         shift
         ;;
     --yes)
@@ -104,6 +142,9 @@ if [ ! -d "${STAGE_SRC}" ]; then
 fi
 
 cleanup() {
+    if [ -n "${TMP_STAGE_ROOT}" ]; then
+        rm -rf "${TMP_STAGE_ROOT}"
+    fi
     rm -rf "${STAGE_DST}"
 }
 trap cleanup EXIT
@@ -118,8 +159,17 @@ log "building image using config:"
 cat "${CONFIG_FILE}"
 printf '\n'
 
+prepare_generated_files_dir
+if [ "${INCLUDE_CLIENT_TARBALL}" = true ]; then
+    build_client_tarball
+fi
+
 rm -rf "${STAGE_DST}"
 cp -R "${STAGE_SRC}" "${STAGE_DST}"
+if [ -d "${TMP_STAGE_ROOT}/generated" ]; then
+    mkdir -p "${STAGE_DST}/files/generated"
+    cp -R "${TMP_STAGE_ROOT}/generated/." "${STAGE_DST}/files/generated/"
+fi
 
 cd "${PI_GEN_DIR}"
 

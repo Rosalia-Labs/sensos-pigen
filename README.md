@@ -60,6 +60,16 @@ Build the image:
 ./bin/build-image.sh
 ```
 
+By default, the build also creates a compressed tarball from a local
+`sensos-client` checkout and installs it into `/home/sensos/sensos-client.tar.gz`
+inside the image. The default source checkout is `../sensos-client` relative to
+this repo. Override or disable that behavior when needed:
+
+```bash
+./bin/build-image.sh --client-repo ../sensos-client
+./bin/build-image.sh --no-client-tarball
+```
+
 To bake an API password into the image, create [`custom-stage/00-sensos-hotspot/files/keys/api_password`](/Users/keittth/Projects/sensos-pigen/custom-stage/00-sensos-hotspot/files/keys/api_password) before building. It will be installed to `/sensos/keys/api_password` in the image if present. The [`custom-stage/00-sensos-hotspot/files/keys/.gitignore`](/Users/keittth/Projects/sensos-pigen/custom-stage/00-sensos-hotspot/files/keys/.gitignore) file keeps that secret out of git by default.
 
 Flash the resulting `.img` from [`pi-gen/deploy`](/Users/keittth/Projects/sensos-pigen/pi-gen/deploy):
