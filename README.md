@@ -19,6 +19,33 @@ Defaults:
 - hotspot password: `sensossensos`
 - optional API password file: `custom-stage/00-sensos-hotspot/files/keys/api_password`
 
+## Supported Paths
+
+There are two reasonable ways to get a SensOS Pi up:
+
+- build a custom image with this repo and `pi-gen`
+- flash a stock Raspberry Pi OS image with Raspberry Pi Imager, then install `sensos-client` afterward
+
+The `pi-gen` path is leaner because it can pre-bake the SensOS-specific defaults,
+hotspot behavior, and optional bundled `sensos-client` tarball into the image.
+The Raspberry Pi Imager path is often smoother operationally because it uses the
+standard Raspberry Pi provisioning flow first, but it usually brings along more
+of the general Raspberry Pi OS environment unless you intentionally choose a Lite
+image.
+
+Important Wi-Fi tradeoff:
+
+- if the Pi has only one Wi-Fi NIC, an automatically enabled hotspot can get in
+  the way later when you want that same radio to join an upstream Wi-Fi network
+  as a client
+- if the Pi has two working Wi-Fi interfaces, setup is much easier because one
+  NIC can host the hotspot while the other joins the upstream Wi-Fi network
+- a direct Ethernet connection is often the simpler first-install path and
+  reduces the need for an automatic hotspot entirely
+- for devices that should ultimately join normal Wi-Fi instead of acting as an
+  access point, prefer the Raspberry Pi Imager path or disable the hotspot in
+  the `pi-gen` flow up front
+
 ## Setup
 
 Install the latest tagged `pi-gen` arm64 release into [`pi-gen`](/Users/keittth/Projects/sensos-pigen/pi-gen):
@@ -54,6 +81,19 @@ Override defaults when needed:
   --hotspot-password sensossensos
 ```
 
+If the target Pi will later use its built-in Wi-Fi to join another network,
+disable the automatic hotspot during image generation:
+
+```bash
+./bin/configure-pi-gen.sh --disable-hotspot
+```
+
+That is usually the better default if you expect to do first access and install
+over a direct Ethernet cable. Keep the hotspot enabled only when Wi-Fi-based
+field setup is worth the tradeoff. If the device has two working Wi-Fi
+interfaces, that tradeoff is much smaller because the AP and client roles do
+not have to compete for the same radio.
+
 Build the image:
 
 ```bash
@@ -80,6 +120,40 @@ Flash the resulting `.img` from [`pi-gen/deploy`](/Users/keittth/Projects/sensos
 ```bash
 ./bin/burn-image.sh --device /dev/rdiskN
 ```
+
+## Alternative: Raspberry Pi Imager
+
+If you do not need a pre-baked SensOS image, you can also:
+
+1. Use Raspberry Pi Imager to flash a stock Raspberry Pi OS image.
+2. Prefer a Raspberry Pi OS Lite image if you want to stay closer to the lean
+   footprint of the `pi-gen` flow.
+3. Boot the Pi, complete the normal Raspberry Pi OS first-boot setup, and get
+   network access working.
+4. Clone [`sensos-client`](/Users/tkeitt/Projects/sensos/sensos-client/README.md)
+   onto the Pi and run [`./install`](/Users/tkeitt/Projects/sensos/sensos-client/install)
+   as the bootstrap user:
+
+```bash
+git clone https://github.com/Rosalia-Labs/sensos-client.git
+cd sensos-client
+./install
+```
+
+Tradeoffs:
+
+- Raspberry Pi Imager can be simpler and more reliable for initial flashing and
+  first boot.
+- A full Raspberry Pi OS desktop image brings the whole GUI stack and related
+  packages, so it is not as lean as the custom `pi-gen` image.
+- Choosing a Lite image narrows that gap and is the better fit when you plan to
+  install `sensos-client` later on a stock OS base.
+- This path also avoids starting with an automatic AP on the primary Wi-Fi NIC,
+  which is often easier if the device is meant to join an existing Wi-Fi
+  network later.
+- If you have a laptop or adapter handy, a direct Ethernet link is often enough
+  for initial access and install, so the hotspot becomes optional convenience
+  rather than a requirement.
 
 ## Notes
 
