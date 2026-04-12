@@ -38,13 +38,16 @@ Important Wi-Fi tradeoff:
 - if the Pi has only one Wi-Fi NIC, an automatically enabled hotspot can get in
   the way later when you want that same radio to join an upstream Wi-Fi network
   as a client
+- in practice, this can look like the auto-hotspot service repeatedly trying to
+  reclaim the interface after you start configuring normal Wi-Fi client access
 - if the Pi has two working Wi-Fi interfaces, setup is much easier because one
   NIC can host the hotspot while the other joins the upstream Wi-Fi network
 - a direct Ethernet connection is often the simpler first-install path and
   reduces the need for an automatic hotspot entirely
 - for devices that should ultimately join normal Wi-Fi instead of acting as an
-  access point, prefer the Raspberry Pi Imager path or disable the hotspot in
-  the `pi-gen` flow up front
+  access point, prefer a `pi-gen` image with the hotspot disabled from the
+  start, or use the Raspberry Pi Imager path if that works better for the
+  target hardware
 
 ## Setup
 
@@ -93,6 +96,16 @@ over a direct Ethernet cable. Keep the hotspot enabled only when Wi-Fi-based
 field setup is worth the tradeoff. If the device has two working Wi-Fi
 interfaces, that tradeoff is much smaller because the AP and client roles do
 not have to compete for the same radio.
+
+For single-radio devices, this is now the recommended path:
+
+```bash
+./bin/configure-pi-gen.sh --disable-hotspot
+./bin/build-image.sh
+```
+
+That keeps the image lean and avoids later fights between `config-wifi` and the
+automatic hotspot on the same interface.
 
 Build the image:
 
@@ -154,6 +167,9 @@ Tradeoffs:
 - If you have a laptop or adapter handy, a direct Ethernet link is often enough
   for initial access and install, so the hotspot becomes optional convenience
   rather than a requirement.
+- In testing, this path may still be less predictable than a custom `pi-gen`
+  image on some units, even when the goal is simply to install `sensos-client`
+  and join normal Wi-Fi later.
 
 ## Notes
 
