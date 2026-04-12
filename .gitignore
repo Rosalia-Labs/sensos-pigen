@@ -200,6 +200,7 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 
 # User-provided pi-gen checkout contents
+/VENDORED_PI_GEN
 /pi-gen/*
 !/pi-gen/.gitkeep
 .cursorignore
