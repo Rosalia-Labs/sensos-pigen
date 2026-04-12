@@ -3,9 +3,9 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGET_DIR="${ROOT_DIR}/pi-gen"
-VENDORED_FILE="${ROOT_DIR}/VENDORED_PI_GEN"
+REPO_ROOT="${SENSOS_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+TARGET_DIR="${REPO_ROOT}/pi-gen"
+VENDORED_FILE="${REPO_ROOT}/VENDORED_PI_GEN"
 REPO_URL="https://github.com/RPi-Distro/pi-gen.git"
 TAG_PATTERN="-arm64"
 
@@ -14,7 +14,7 @@ FORCE=false
 
 usage() {
     cat <<EOF
-Usage: $0 [options]
+Usage: $(basename "$0") [options]
 
 Install the latest tagged RPi-Distro/pi-gen arm64 release into ${TARGET_DIR}.
 
@@ -27,11 +27,40 @@ Options:
 EOF
 }
 
+log() {
+    printf '[install-pi-gen] %s\n' "$*"
+}
+
+die() {
+    printf '[install-pi-gen] ERROR: %s\n' "$*" >&2
+    exit 1
+}
+
 require_command() {
-    if ! command -v "$1" >/dev/null 2>&1; then
-        echo "Missing required command: $1" >&2
-        exit 1
+    command -v "$1" >/dev/null 2>&1 || die "missing required command: $1"
+}
+
+is_interactive() {
+    [[ -t 0 ]]
+}
+
+confirm_yes_no() {
+    local prompt="$1"
+    local default_yes="${2:-false}"
+    local answer
+
+    if ! is_interactive; then
+        return 1
     fi
+
+    if [[ "${default_yes}" == "true" ]]; then
+        read -r -p "${prompt} [Y/n] " answer
+        [[ -z "${answer}" || "${answer}" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]
+        return
+    fi
+
+    read -r -p "${prompt} [y/N] " answer
+    [[ "${answer}" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]
 }
 
 resolve_latest_tag() {
@@ -51,9 +80,7 @@ resolve_latest_tag() {
     )"
 
     if [ -z "${ref}" ]; then
-        echo "Unable to resolve a matching tag from ${REPO_URL}" >&2
-        echo "Tag pattern: ${TAG_PATTERN}" >&2
-        exit 1
+        die "unable to resolve a matching tag from ${REPO_URL} (tag pattern: ${TAG_PATTERN})"
     fi
 
     printf '%s\n' "${ref}"
@@ -86,8 +113,8 @@ while [[ $# -gt 0 ]]; do
         exit 0
         ;;
     *)
-        echo "Unknown option: $1" >&2
-        exit 1
+        usage >&2
+        die "unknown option: $1"
         ;;
     esac
 done
@@ -103,9 +130,11 @@ if [ -z "${TAG}" ]; then
 fi
 
 if pi_gen_dir_is_nonempty && [ "${FORCE}" != true ]; then
-    echo "${TARGET_DIR} already exists and is not empty." >&2
-    echo "Re-run with --force to replace it." >&2
-    exit 1
+    if is_interactive && confirm_yes_no "${TARGET_DIR} already exists and will be replaced. Continue?" false; then
+        FORCE=true
+    else
+        die "${TARGET_DIR} already exists and is not empty; re-run with --force to replace it"
+    fi
 fi
 
 TMP_DIR="$(mktemp -d)"
@@ -114,7 +143,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Installing pi-gen tag ${TAG} from ${REPO_URL}"
+log "installing pi-gen tag ${TAG} from ${REPO_URL}"
 git clone --depth 1 --branch "${TAG}" "${REPO_URL}" "${TMP_DIR}/pi-gen"
 
 COMMIT="$(git -C "${TMP_DIR}/pi-gen" rev-parse --short=7 HEAD)"
@@ -130,5 +159,5 @@ SOURCE_COMMIT=${COMMIT}
 VENDORED_AT=$(date +%F)
 EOF
 
-echo "Installed pi-gen at ${TARGET_DIR}"
-echo "Recorded version metadata in ${VENDORED_FILE}"
+log "installed pi-gen at ${TARGET_DIR}"
+log "recorded version metadata in ${VENDORED_FILE}"

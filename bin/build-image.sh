@@ -3,25 +3,63 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PI_GEN_DIR="${ROOT_DIR}/pi-gen"
+REPO_ROOT="${SENSOS_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PI_GEN_DIR="${REPO_ROOT}/pi-gen"
 CONFIG_FILE="${PI_GEN_DIR}/config"
-STAGE_SRC="${ROOT_DIR}/custom-stage/00-sensos-hotspot"
+STAGE_SRC="${REPO_ROOT}/custom-stage/00-sensos-hotspot"
 STAGE_DST="${PI_GEN_DIR}/stage2/04-sensos-hotspot"
-VENDORED_FILE="${ROOT_DIR}/VENDORED_PI_GEN"
+VENDORED_FILE="${REPO_ROOT}/VENDORED_PI_GEN"
 
 CONTINUE_BUILD=false
 REMOVE_DEPLOY=false
+YES=false
 
 usage() {
     cat <<EOF
-Usage: $0 [options]
+Usage: $(basename "$0") [options]
 
 Options:
   --remove-existing              Delete previously built images from pi-gen/deploy
   --continue                     Continue a previously interrupted build
+  --yes                          Skip interactive confirmation prompts
   -h, --help                     Show this help text
 EOF
+}
+
+log() {
+    printf '[build-image] %s\n' "$*"
+}
+
+die() {
+    printf '[build-image] ERROR: %s\n' "$*" >&2
+    exit 1
+}
+
+is_interactive() {
+    [[ -t 0 ]]
+}
+
+confirm_yes_no() {
+    local prompt="$1"
+    local default_yes="${2:-false}"
+    local answer
+
+    if [[ "${YES}" == "true" ]]; then
+        return 0
+    fi
+
+    if ! is_interactive; then
+        return 1
+    fi
+
+    if [[ "${default_yes}" == "true" ]]; then
+        read -r -p "${prompt} [Y/n] " answer
+        [[ -z "${answer}" || "${answer}" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]
+        return
+    fi
+
+    read -r -p "${prompt} [y/N] " answer
+    [[ "${answer}" =~ ^([Yy]|[Yy][Ee][Ss])$ ]]
 }
 
 while [[ $# -gt 0 ]]; do
@@ -34,36 +72,35 @@ while [[ $# -gt 0 ]]; do
         CONTINUE_BUILD=true
         shift
         ;;
+    --yes)
+        YES=true
+        shift
+        ;;
     -h|--help)
         usage
         exit 0
         ;;
     *)
-        echo "Unknown option: $1" >&2
-        exit 1
+        usage >&2
+        die "unknown option: $1"
         ;;
     esac
 done
 
 if [ ! -f "${CONFIG_FILE}" ]; then
-    echo "Missing ${CONFIG_FILE}. Run bin/configure-pi-gen.sh first." >&2
-    exit 1
+    die "missing ${CONFIG_FILE}; run bin/configure-pi-gen.sh first"
 fi
 
 if [ ! -d "${PI_GEN_DIR}" ] || [ ! -x "${PI_GEN_DIR}/build-docker.sh" ]; then
-    echo "pi-gen tree is missing or incomplete at ${PI_GEN_DIR}." >&2
-    exit 1
+    die "pi-gen tree is missing or incomplete at ${PI_GEN_DIR}"
 fi
 
 if ! grep -Eq '^export ARCH=arm64$' "${PI_GEN_DIR}/build.sh"; then
-    echo "This repo expects an arm64 pi-gen tree at ${PI_GEN_DIR}." >&2
-    echo "Reinstall with: ./bin/install-pi-gen.sh --force" >&2
-    exit 1
+    die "this repo expects an arm64 pi-gen tree at ${PI_GEN_DIR}; reinstall with ./bin/install-pi-gen.sh --force"
 fi
 
 if [ ! -d "${STAGE_SRC}" ]; then
-    echo "Missing custom stage at ${STAGE_SRC}." >&2
-    exit 1
+    die "missing custom stage at ${STAGE_SRC}"
 fi
 
 cleanup() {
@@ -72,14 +109,14 @@ cleanup() {
 trap cleanup EXIT
 
 if [ -f "${VENDORED_FILE}" ]; then
-    echo "Installed pi-gen release:"
+    log "installed pi-gen release:"
     cat "${VENDORED_FILE}"
-    echo
+    printf '\n'
 fi
 
-echo "Building image using config:"
+log "building image using config:"
 cat "${CONFIG_FILE}"
-echo
+printf '\n'
 
 rm -rf "${STAGE_DST}"
 cp -R "${STAGE_SRC}" "${STAGE_DST}"
@@ -87,16 +124,19 @@ cp -R "${STAGE_SRC}" "${STAGE_DST}"
 cd "${PI_GEN_DIR}"
 
 if [ "${REMOVE_DEPLOY}" = true ]; then
+    if ! confirm_yes_no "Delete existing images from ${PI_GEN_DIR}/deploy before building?" false; then
+        die "refusing to remove existing images without confirmation; re-run interactively or pass --yes"
+    fi
     rm -rf ./deploy/*
 fi
 
 if [ "${CONTINUE_BUILD}" = true ]; then
-    echo "Continuing previous build..."
+    log "continuing previous build"
     CONTINUE=1 ./build-docker.sh
 else
-    echo "Starting fresh build..."
+    log "starting fresh build"
     docker rm -v pigen_work >/dev/null 2>&1 || true
     ./build-docker.sh
 fi
 
-echo "Build complete."
+log "build complete"

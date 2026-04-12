@@ -3,8 +3,8 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PI_GEN_DIR="${ROOT_DIR}/pi-gen"
+REPO_ROOT="${SENSOS_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PI_GEN_DIR="${REPO_ROOT}/pi-gen"
 CONFIG_FILE="${PI_GEN_DIR}/config"
 PI_GEN_RELEASE="SensOS reference"
 
@@ -29,7 +29,7 @@ IMAGE_SIZE=""
 
 usage() {
     cat <<EOF
-Usage: $0 [options]
+Usage: $(basename "$0") [options]
 
 Options:
   --img-name <value>                         (default: ${IMG_NAME})
@@ -45,17 +45,22 @@ Options:
 EOF
 }
 
+log() {
+    printf '[configure-pi-gen] %s\n' "$*"
+}
+
+die() {
+    printf '[configure-pi-gen] ERROR: %s\n' "$*" >&2
+    exit 1
+}
+
 require_pi_gen_tree() {
     if [ ! -d "${PI_GEN_DIR}" ] || [ ! -x "${PI_GEN_DIR}/build-docker.sh" ]; then
-        echo "Expected a pi-gen release at ${PI_GEN_DIR}." >&2
-        echo "Download or extract pi-gen there before running this script." >&2
-        exit 1
+        die "expected a pi-gen release at ${PI_GEN_DIR}; download or install pi-gen there before running this script"
     fi
 
     if ! grep -Eq '^export ARCH=arm64$' "${PI_GEN_DIR}/build.sh"; then
-        echo "Expected an arm64 pi-gen tree at ${PI_GEN_DIR}." >&2
-        echo "Reinstall with: ./bin/install-pi-gen.sh --force" >&2
-        exit 1
+        die "expected an arm64 pi-gen tree at ${PI_GEN_DIR}; reinstall with ./bin/install-pi-gen.sh --force"
     fi
 }
 
@@ -102,8 +107,8 @@ while [[ $# -gt 0 ]]; do
         exit 0
         ;;
     *)
-        echo "Unknown option: $1" >&2
-        exit 1
+        usage >&2
+        die "unknown option: $1"
         ;;
     esac
 done
@@ -111,14 +116,12 @@ done
 require_pi_gen_tree
 
 if [[ "${DISABLE_FIRST_BOOT_USER_RENAME}" == "1" && -z "${FIRST_USER_PASS}" ]]; then
-    echo "FIRST_USER_PASS must be set when first-boot user rename is disabled." >&2
-    exit 1
+    die "FIRST_USER_PASS must be set when first-boot user rename is disabled"
 fi
 
 if [[ "${ENABLE_HOTSPOT}" == "1" ]]; then
     if [[ ${#HOTSPOT_PASSWORD} -lt 8 || ${#HOTSPOT_PASSWORD} -gt 63 ]]; then
-        echo "Hotspot password must be between 8 and 63 characters." >&2
-        exit 1
+        die "hotspot password must be between 8 and 63 characters"
     fi
 fi
 
@@ -147,4 +150,4 @@ if [ -n "${IMAGE_SIZE}" ]; then
     echo "IMG_SIZE=\"$((IMAGE_SIZE * 1048576))\"" >> "${CONFIG_FILE}"
 fi
 
-echo "Wrote ${CONFIG_FILE}"
+log "wrote ${CONFIG_FILE}"
