@@ -63,7 +63,9 @@ Build the image:
 By default, the build also clones
 `https://github.com/Rosalia-Labs/sensos-client.git`, creates a compressed
 tarball from that checkout, and installs it into
-`/home/sensos/sensos-client.tar.gz` inside the image. Override the source repo
+`/home/sensos/sensos-client.tar.gz` inside the image. The archive preserves a
+top-level `sensos-client/` directory so extracting it does not spill files into
+the current working directory. Override the source repo
 or ref, or disable that behavior when needed:
 
 ```bash

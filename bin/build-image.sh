@@ -97,8 +97,8 @@ build_client_tarball() {
 
     [ -f "${clone_dir}/README.md" ] || die "cloned sensos-client repo at ${clone_dir} does not look valid"
 
-    log "creating ${archive_path} from ${CLIENT_REPO_URL} (${CLIENT_REF})"
-    tar -C "${clone_dir}" -czf "${archive_path}" .
+    log "creating ${archive_path} with top-level sensos-client/ from ${CLIENT_REPO_URL} (${CLIENT_REF})"
+    tar -C "${TMP_STAGE_ROOT}" -czf "${archive_path}" "sensos-client"
 }
 
 while [[ $# -gt 0 ]]; do
