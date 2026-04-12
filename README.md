@@ -38,16 +38,16 @@ Important Wi-Fi tradeoff:
 - if the Pi has only one Wi-Fi NIC, an automatically enabled hotspot can get in
   the way later when you want that same radio to join an upstream Wi-Fi network
   as a client
-- in practice, this can look like the auto-hotspot service repeatedly trying to
-  reclaim the interface after you start configuring normal Wi-Fi client access
+- if that handoff is not handled cleanly, the bootstrap hotspot may continue
+  trying to reclaim the interface after you start configuring normal Wi-Fi
+  client access
 - if the Pi has two working Wi-Fi interfaces, setup is much easier because one
   NIC can host the hotspot while the other joins the upstream Wi-Fi network
 - a direct Ethernet connection is often the simpler first-install path and
   reduces the need for an automatic hotspot entirely
 - for devices that should ultimately join normal Wi-Fi instead of acting as an
-  access point, prefer a `pi-gen` image with the hotspot disabled from the
-  start, or use the Raspberry Pi Imager path if that works better for the
-  target hardware
+  access point, disabling the bootstrap hotspot from the start is often the
+  simpler operational choice on single-radio hardware
 
 ## Setup
 
@@ -97,15 +97,15 @@ field setup is worth the tradeoff. If the device has two working Wi-Fi
 interfaces, that tradeoff is much smaller because the AP and client roles do
 not have to compete for the same radio.
 
-For single-radio devices, this is now the recommended path:
+For single-radio devices, this is often the simplest path:
 
 ```bash
 ./bin/configure-pi-gen.sh --disable-hotspot
 ./bin/build-image.sh
 ```
 
-That keeps the image lean and avoids later fights between `config-wifi` and the
-automatic hotspot on the same interface.
+That keeps the image lean and avoids unnecessary competition between
+`config-wifi` and the bootstrap hotspot on the same interface.
 
 Build the image:
 
@@ -167,9 +167,12 @@ Tradeoffs:
 - If you have a laptop or adapter handy, a direct Ethernet link is often enough
   for initial access and install, so the hotspot becomes optional convenience
   rather than a requirement.
-- In testing, this path may still be less predictable than a custom `pi-gen`
-  image on some units, even when the goal is simply to install `sensos-client`
-  and join normal Wi-Fi later.
+- In testing, Wi-Fi join behavior may depend as much on the target network
+  security environment as on whether the base image came from `pi-gen` or a
+  stock Raspberry Pi OS install.
+- In particular, mixed WPA2/WPA3 mesh environments with roaming can be more
+  troublesome than a simple standalone network. For first setup, a dedicated
+  2.4 GHz guest network using WPA2 only may be the more predictable choice.
 
 ## Notes
 
