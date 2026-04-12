@@ -60,13 +60,14 @@ Build the image:
 ./bin/build-image.sh
 ```
 
-By default, the build also creates a compressed tarball from a local
-`sensos-client` checkout and installs it into `/home/sensos/sensos-client.tar.gz`
-inside the image. The default source checkout is `../sensos-client` relative to
-this repo. Override or disable that behavior when needed:
+By default, the build also clones
+`https://github.com/Rosalia-Labs/sensos-client.git`, creates a compressed
+tarball from that checkout, and installs it into
+`/home/sensos/sensos-client.tar.gz` inside the image. Override the source repo
+or ref, or disable that behavior when needed:
 
 ```bash
-./bin/build-image.sh --client-repo ../sensos-client
+./bin/build-image.sh --client-repo-url https://github.com/Rosalia-Labs/sensos-client.git --client-ref main
 ./bin/build-image.sh --no-client-tarball
 ```
 

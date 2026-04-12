@@ -9,15 +9,17 @@ CONFIG_FILE="${PI_GEN_DIR}/config"
 STAGE_SRC="${REPO_ROOT}/custom-stage/00-sensos-hotspot"
 STAGE_DST="${PI_GEN_DIR}/stage2/04-sensos-hotspot"
 VENDORED_FILE="${REPO_ROOT}/VENDORED_PI_GEN"
-DEFAULT_CLIENT_REPO="${REPO_ROOT}/../sensos-client"
 CLIENT_ARCHIVE_NAME="sensos-client.tar.gz"
 TMP_STAGE_ROOT=""
+DEFAULT_CLIENT_REPO_URL="https://github.com/Rosalia-Labs/sensos-client.git"
+DEFAULT_CLIENT_REF="main"
 
 CONTINUE_BUILD=false
 REMOVE_DEPLOY=false
 YES=false
 INCLUDE_CLIENT_TARBALL=true
-CLIENT_REPO="${SENSOS_CLIENT_REPO:-${DEFAULT_CLIENT_REPO}}"
+CLIENT_REPO_URL="${SENSOS_CLIENT_REPO_URL:-${DEFAULT_CLIENT_REPO_URL}}"
+CLIENT_REF="${SENSOS_CLIENT_REF:-${DEFAULT_CLIENT_REF}}"
 
 usage() {
     cat <<EOF
@@ -26,7 +28,10 @@ Usage: $(basename "$0") [options]
 Options:
   --remove-existing              Delete previously built images from pi-gen/deploy
   --continue                     Continue a previously interrupted build
-  --client-repo <path>           Local sensos-client checkout to archive (default: ${CLIENT_REPO})
+  --client-repo-url <url>        Git URL to clone for the bundled sensos-client tarball
+                                 (default: ${CLIENT_REPO_URL})
+  --client-ref <ref>             Branch, tag, or ref to clone for the bundled tarball
+                                 (default: ${CLIENT_REF})
   --no-client-tarball            Skip bundling a sensos-client tarball into /home/sensos
   --yes                          Skip interactive confirmation prompts
   -h, --help                     Show this help text
@@ -82,14 +87,18 @@ prepare_generated_files_dir() {
 
 build_client_tarball() {
     local archive_path="${TMP_STAGE_ROOT}/generated/${CLIENT_ARCHIVE_NAME}"
+    local clone_dir="${TMP_STAGE_ROOT}/sensos-client"
 
-    [ -d "${CLIENT_REPO}" ] || die "sensos-client repo not found at ${CLIENT_REPO}; pass --client-repo or use --no-client-tarball"
-    [ -f "${CLIENT_REPO}/README.md" ] || die "sensos-client repo at ${CLIENT_REPO} does not look valid"
-
+    require_command git
     require_command tar
 
-    log "creating ${archive_path} from ${CLIENT_REPO}"
-    tar -C "${CLIENT_REPO}" -czf "${archive_path}" .
+    log "cloning ${CLIENT_REPO_URL} (${CLIENT_REF})"
+    git clone --depth 1 --branch "${CLIENT_REF}" "${CLIENT_REPO_URL}" "${clone_dir}"
+
+    [ -f "${clone_dir}/README.md" ] || die "cloned sensos-client repo at ${clone_dir} does not look valid"
+
+    log "creating ${archive_path} from ${CLIENT_REPO_URL} (${CLIENT_REF})"
+    tar -C "${clone_dir}" -czf "${archive_path}" .
 }
 
 while [[ $# -gt 0 ]]; do
@@ -102,8 +111,12 @@ while [[ $# -gt 0 ]]; do
         CONTINUE_BUILD=true
         shift
         ;;
-    --client-repo)
-        CLIENT_REPO="$2"
+    --client-repo-url)
+        CLIENT_REPO_URL="$2"
+        shift 2
+        ;;
+    --client-ref)
+        CLIENT_REF="$2"
         shift 2
         ;;
     --no-client-tarball)
